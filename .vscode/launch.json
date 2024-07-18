@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Cargo Run",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": ["run", "--"],
+                "filter": {
+                    "name": "elsdc",
+                    "kind": "bin"
+                }
+            },
+            "args": ["~/codes/CircleDetection/dataset PCB/Images/1.bmp"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "cargo build",
+            "stopOnEntry": false,
+            "sourceLanguages": ["rust"],
+            "env": {
+                "PATH": "/home/zihan/.cargo/bin:${env:PATH}"
+            },
+            "sourceMap": {
+                "/rustc/<id>": "${env:HOME}/.rustup/toolchains/${env:RUSTUP_TOOLCHAIN}/lib/rustlib/src/rust/library"
+            }
+        }
+    ]
+}
