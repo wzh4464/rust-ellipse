@@ -1,0 +1,3 @@
+[submodule "ELSDc_c"]
+	path = ELSDc_c
+	url = https://github.com/wzh4464/ELSDc.git
