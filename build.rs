@@ -1,4 +1,18 @@
+/**
+ * File: /build.rs
+ * Created Date: Thursday, July 18th 2024
+ * Author: Zihan
+ * -----
+ * Last Modified: Thursday, 18th July 2024 4:47:50 pm
+ * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
+ * -----
+ * HISTORY:
+ * Date      		By   	Comments
+ * ----------		------	---------------------------------------------------------
+**/
+
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -22,8 +36,14 @@ fn main() {
         panic!("Failed to build ELSDc_c library");
     }
 
+    // 移动 libelsdc.so 到当前文件夹
+    let current_dir = env::current_dir().expect("Failed to get current directory");
+    let src = current_dir.join("ELSDc_c").join("libelsdc.so");
+    let dest = current_dir.join("libelsdc.so");
+    fs::rename(&src, &dest).expect("Failed to move libelsdc.so to current directory");
+
     // 告诉 cargo 链接编译后的共享库
-    println!("cargo:rustc-link-search=native=ELSDc_c");
+    println!("cargo:rustc-link-search=native={}", current_dir.display());
     println!("cargo:rustc-link-lib=dylib=elsdc");
 
     // 生成绑定代码
@@ -39,8 +59,6 @@ fn main() {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Failed to write bindings");
 }
-
-
 
 // #
 // #  Copyright (c) 2012 viorica patraucean (vpatrauc@gmail.com)

@@ -10,3 +10,6 @@ opencv = { version = "0.92.0", features = ["clang-runtime"] }
 [build-dependencies]
 cc = "1.1.5"
 bindgen = "0.69.4"
+
+[package.metadata]
+build = "build.rs"
