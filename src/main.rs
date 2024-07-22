@@ -4,7 +4,6 @@ extern crate opencv;
 use elsdc::elsdc::{detect_primitives, free_outputs};
 use elsdc::elsdc::read_pgm_image_double;
 use elsdc::elsdc::free_PImageDouble;
-use libc::c_double;
 use libc::c_uint;
 use opencv::core::Mat;
 use opencv::core::Scalar;

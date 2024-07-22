@@ -12,7 +12,6 @@
 **/
 
 use libc::{c_double, c_int, c_uint, c_void};
-use std::ffi::{CStr, CString};
 use std::ptr::null_mut;
 
 use crate::ring::Ring;
