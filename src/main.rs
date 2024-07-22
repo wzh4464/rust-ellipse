@@ -7,9 +7,8 @@ use elsdc::elsdc::free_PImageDouble;
 use libc::c_uint;
 use opencv::core::Mat;
 use opencv::core::Scalar;
-use opencv::prelude::*;
-use opencv::highgui;
 use opencv::core::CV_8UC3;
+use opencv::core::Vector;
 use std::env;
 use std::ffi::CString;
 
@@ -62,9 +61,11 @@ fn main() {
                 let mut img: Mat = Mat::new_rows_cols_with_default(ysize as i32, xsize as i32, CV_8UC3, Scalar::all(0.0)).unwrap();
                 // 绘制检测到的椭圆或圆弧
                 ring.draw(&mut img).unwrap();
-                // 显示或保存图像
-                highgui::imshow("Detected Ring", &img).unwrap();
-                highgui::wait_key(0).unwrap();
+                // 保存图像
+                let output_path = format!("result/output_ring_{}.png", i);
+                let params = Vector::new();
+                opencv::imgcodecs::imwrite(&output_path, &img, &params).unwrap();
+                println!("Saved detected ring image to {}", output_path);
             }
         } else {
             println!("Detection failed!");

@@ -14,3 +14,6 @@ pkg-config = "0.3.19"
 
 [package.metadata]
 build = "build.rs"
+
+[build]
+rustc-wrapper = "sccache"
