@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Thursday, 18th July 2024 4:23:02 pm
+ * Last Modified: Monday, 22nd July 2024 10:02:45 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -15,6 +15,8 @@ use libc::{c_double, c_int};
 use opencv::core::{Point, Scalar, Size};
 use opencv::imgproc;
 use opencv::prelude::*;
+use std::fs::File;
+use std::io::Write;
 
 #[repr(C)]
 pub struct Ring {
@@ -73,16 +75,46 @@ impl Ring {
         }
     }
 
+    pub fn log_to_file(&self, file: &mut File) -> Result<(), std::io::Error> {
+        writeln!(
+            file,
+            "Ring {}: center=({}, {}), axes=({}, {}), angle={}, startAngle={}, endAngle={}, full={}",
+            0,
+            self.cx,
+            self.cy,
+            self.ax,
+            self.bx,
+            self.theta,
+            self.ang_start,
+            self.ang_end,
+            self.full
+        )
+    }
+
     pub fn draw(&self, img: &mut Mat) -> opencv::Result<()> {
         let color = Scalar::new(0.0, 255.0, 0.0, 0.0);
         let thickness = 2;
+
+        // if exist out_rust.txt then add argument to a new line
+        // if not exist then create a new file and add argument to a new line
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open("out_rust.txt")
+            .unwrap();
+
+        // match self.log_to_file(&mut file)
+        match self.log_to_file(&mut file) {
+            Ok(_) => {},
+            Err(e) => eprintln!("Failed to log ring to file: {}", e),
+        };
 
         if self.full != 0 {
             imgproc::ellipse(
                 img,
                 Point::new(self.cx as i32, self.cy as i32),
                 Size::new(self.ax as i32, self.bx as i32),
-                self.theta,
+                self.theta * 180.0 / std::f64::consts::PI,
                 0.0,
                 360.0,
                 color,
@@ -95,9 +127,9 @@ impl Ring {
                 img,
                 Point::new(self.cx as i32, self.cy as i32),
                 Size::new(self.ax as i32, self.bx as i32),
-                self.theta,
-                self.ang_start,
-                self.ang_end,
+                self.theta * 180.0 / std::f64::consts::PI,
+                self.ang_start * 180.0 / std::f64::consts::PI,
+                self.ang_end * 180.0 / std::f64::consts::PI,
                 color,
                 thickness,
                 imgproc::LINE_8,
