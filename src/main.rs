@@ -8,9 +8,8 @@ use libc::c_double;
 use libc::c_uint;
 use opencv::core::Mat;
 use opencv::core::Scalar;
-use opencv::prelude::*;
-use opencv::highgui;
 use opencv::core::CV_8UC3;
+use opencv::core::Vector;
 use std::env;
 use std::ffi::CString;
 
@@ -54,18 +53,20 @@ fn main() {
             for i in 0..ell_count as c_uint {
                 let ring = ell_out.add(i as usize).read();
                 let label = ell_labels.add(i as usize).read();
-                println!(
-                    "Ring {}: center=({}, {}), axes=({}, {}), angle={}, startAngle={}, endAngle={}, full={}",
-                    label, ring.cx, ring.cy, ring.ax, ring.bx, ring.theta, ring.ang_start, ring.ang_end, ring.full
-                );
+                // println!(
+                //     "Ring {}: center=({}, {}), axes=({}, {}), angle={}, startAngle={}, endAngle={}, full={}",
+                //     label, ring.cx, ring.cy, ring.ax, ring.bx, ring.theta, ring.ang_start, ring.ang_end, ring.full
+                // );
 
                 // 创建一个空白图像
                 let mut img: Mat = Mat::new_rows_cols_with_default(ysize as i32, xsize as i32, CV_8UC3, Scalar::all(0.0)).unwrap();
                 // 绘制检测到的椭圆或圆弧
                 ring.draw(&mut img).unwrap();
-                // 显示或保存图像
-                highgui::imshow("Detected Ring", &img).unwrap();
-                highgui::wait_key(0).unwrap();
+                // 保存图像
+                let output_path = format!("result/output_ring_{}.png", i);
+                let params = Vector::new();
+                opencv::imgcodecs::imwrite(&output_path, &img, &params).unwrap();
+                // println!("Saved detected ring image to {}", output_path);
             }
         } else {
             println!("Detection failed!");

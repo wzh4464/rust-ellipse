@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Thursday, 18th July 2024 7:32:41 pm
+ * Last Modified: Monday, 22nd July 2024 10:00:38 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -79,7 +79,7 @@ pub extern "C" fn detect_primitives(
         };
 
         // debug output out_img
-        println!("out_img: {:?}", &out_img);
+        // println!("out_img: {:?}", &out_img);
 
         let mut poly_count: c_int = 0;
         let mut poly_out: *mut c_void = null_mut();

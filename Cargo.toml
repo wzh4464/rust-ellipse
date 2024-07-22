@@ -13,3 +13,6 @@ bindgen = "0.69.4"
 
 [package.metadata]
 build = "build.rs"
+
+[build]
+rustc-wrapper = "sccache"
