@@ -2,7 +2,7 @@ extern crate elsdc;
 extern crate opencv;
 
 use elsdc::elsdc::{detect_primitives, free_PImageDouble, free_outputs, read_pgm_image_double};
-use libc::c_uint;
+use libc::{c_double, c_uint};
 use opencv::core::{Mat, Scalar, Vector, CV_8UC3};
 use opencv::imgcodecs::{self};
 use opencv::prelude::*;
@@ -39,7 +39,7 @@ fn main() {
             &mut ell_labels,
             &mut ell_count,
             &mut out,
-            std::slice::from_raw_parts_mut((*img_double).data, (xsize * ysize) as usize),
+            (*img_double).data as *mut c_double,
             xsize,
             ysize,
         );
