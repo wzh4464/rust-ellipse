@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Monday, 22nd July 2024 10:00:38 pm
+ * Last Modified: Monday, 22nd July 2024 11:15:04 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -12,7 +12,6 @@
 **/
 
 use libc::{c_double, c_int, c_uint, c_void};
-use std::ffi::{CStr, CString};
 use std::ptr::null_mut;
 
 use crate::ring::Ring;
@@ -54,22 +53,22 @@ pub extern "C" fn detect_primitives(
     ell_labels: &mut *mut c_int,
     ell_count: &mut c_int,
     out: &mut *mut c_int,
-    in_data: &mut [c_double],
+    in_data: *mut c_double,
     xsize: c_uint,
     ysize: c_uint,
 ) -> c_int {
     unsafe {
         let in_img = ImageDouble {
-            data: in_data.as_mut_ptr(),
+            data: in_data,
             xsize,
             ysize,
         };
 
-        // 创建一个零初始化的 i32 数组，并获取它的原始指针
-        let mut out_data: Vec<i32> = vec![0; (xsize * ysize) as usize];
-        let out_data_ptr: *mut i32 = out_data.as_mut_ptr();
+        // Create a zero-initialized i32 array and get its raw pointer
+        let mut out_data: Vec<c_int> = vec![0; (xsize * ysize) as usize];
+        let out_data_ptr: *mut c_int = out_data.as_mut_ptr();
 
-        // 确保 out_data 在整个使用期间不会被释放
+        // Ensure out_data is not deallocated
         std::mem::forget(out_data);
 
         let mut out_img = PImageInt {
@@ -77,9 +76,6 @@ pub extern "C" fn detect_primitives(
             xsize,
             ysize,
         };
-
-        // debug output out_img
-        // println!("out_img: {:?}", &out_img);
 
         let mut poly_count: c_int = 0;
         let mut poly_out: *mut c_void = null_mut();
@@ -97,7 +93,7 @@ pub extern "C" fn detect_primitives(
         );
 
         *out = out_img.data;
-        0 // 成功
+        0 // Success
     }
 }
 
@@ -108,13 +104,14 @@ pub extern "C" fn free_outputs(
     ell_count: c_int,
     out: *mut c_int,
 ) {
+    let _ = ell_count;
     unsafe {
         if !ell_out.is_null() {
-            Box::from_raw(ell_out);
-            Box::from_raw(ell_labels);
+            let _ = Box::from_raw(ell_out);
+            let _ = Box::from_raw(ell_labels);
         }
         if !out.is_null() {
-            Box::from_raw(out);
+            let _ = Box::from_raw(out);
         }
     }
 }
