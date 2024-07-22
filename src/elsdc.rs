@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Monday, 22nd July 2024 10:00:38 pm
+ * Last Modified: Monday, 22nd July 2024 11:03:11 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -107,13 +107,14 @@ pub extern "C" fn free_outputs(
     ell_count: c_int,
     out: *mut c_int,
 ) {
+    let _ = ell_count;
     unsafe {
         if !ell_out.is_null() {
-            Box::from_raw(ell_out);
-            Box::from_raw(ell_labels);
+            let _ = Box::from_raw(ell_out);
+            let _ = Box::from_raw(ell_labels);
         }
         if !out.is_null() {
-            Box::from_raw(out);
+            let _ = Box::from_raw(out);
         }
     }
 }
