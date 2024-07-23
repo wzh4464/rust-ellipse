@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Monday, 22nd July 2024 11:04:27 pm
+ * Last Modified: Tuesday, 23rd July 2024 11:50:18 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -15,7 +15,7 @@ use libc::{c_double, c_int};
 use opencv::core::{Point, Scalar, Size};
 use opencv::imgproc;
 use opencv::prelude::*;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Write;
 
 #[repr(C)]
@@ -96,12 +96,15 @@ impl Ring {
         let color = Scalar::new(0.0, 255.0, 0.0, 0.0);
         let thickness = 2;
 
+        // mkdir -p result
+        fs::create_dir_all("result").unwrap();
+
         // if exist out_rust.txt then add argument to a new line
         // if not exist then create a new file and add argument to a new line
         let mut file = std::fs::OpenOptions::new()
             .append(true)
             .create(true)
-            .open("out_rust.txt")
+            .open("result/out_rust.txt")
             .unwrap();
 
         // match self.log_to_file(&mut file)
