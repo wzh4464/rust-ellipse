@@ -3,7 +3,7 @@
  * Created Date: Monday, July 22nd 2024
  * Author: Zihan
  * -----
- * Last Modified: Monday, 22nd July 2024 10:40:10 pm
+ * Last Modified: Tuesday, 23rd July 2024 12:54:29 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -11,8 +11,12 @@
  * ----------		------	---------------------------------------------------------
 **/
 
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Read};
+use std::path::Path;
+
+use opencv::core::Vector;
+use opencv::imgcodecs::{self, IMREAD_GRAYSCALE};
 
 
 #[derive(Debug)]
@@ -112,4 +116,20 @@ pub fn scale_data(data: &mut [f64], max_value: f64) {
     for v in data.iter_mut() {
         *v = (*v - min) / (max - min) * max_value;
     }
+}
+
+pub fn ensure_pgm_image(filename: &str) -> io::Result<String> {
+    if filename.to_lowercase().ends_with(".pgm") {
+        return Ok(filename.to_string());
+    }
+
+    let img = imgcodecs::imread(filename, IMREAD_GRAYSCALE)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to read image: {}", e)))?;
+
+    let new_filename = format!("pgm/{}.pgm", Path::new(filename).file_stem().unwrap().to_string_lossy());
+    fs::create_dir_all("pgm")?;
+    imgcodecs::imwrite(&new_filename, &img, &Vector::new())
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to write PGM image: {}", e)))?;
+
+    Ok(new_filename)
 }

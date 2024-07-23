@@ -1,7 +1,7 @@
-extern crate elsdc;
 extern crate opencv;
 
 use elsdc::elsdc::{detect_primitives, free_PImageDouble, free_outputs, read_pgm_image_double};
+use elsdc::pgm::ensure_pgm_image;
 use libc::{c_double, c_uint};
 use opencv::core::{Mat, Scalar, Vector, CV_8UC3};
 use opencv::imgcodecs::{self};
@@ -17,8 +17,11 @@ fn main() {
         std::process::exit(1);
     }
 
-    let filename = CString::new(args[1].clone()).unwrap();
-    let img_double = unsafe { read_pgm_image_double(filename.as_ptr()) };
+    let filename = &args[1];
+    let pgm_filename = ensure_pgm_image(filename).expect("Failed to ensure PGM format");
+
+    let cstring_filename = CString::new(pgm_filename.clone()).unwrap();
+    let img_double = unsafe { read_pgm_image_double(cstring_filename.as_ptr()) };
 
     if img_double.is_null() {
         eprintln!("Failed to read PGM image");
