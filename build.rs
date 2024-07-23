@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Tuesday, 23rd July 2024 11:21:10 am
+ * Last Modified: Tuesday, 23rd July 2024 11:41:59 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -70,12 +70,13 @@ fn main() {
     let src = current_dir.join("ELSDc_c").join("libelsdc").with_extension(&lib_ext);
     let dst = current_dir.join("libelsdc").with_extension(&lib_ext);
     fs::rename(&src, &dst).expect("Failed to move libelsdc library to current directory");
-    log!("Moved libelsdc.{} to current directory", lib_ext);
+    log!("Moved libelsdc.{} to current directory {}", lib_ext, current_dir.display());
 
     // 告诉 cargo 链接编译后的共享库
     println!("cargo:rustc-link-search=native={}", current_dir.display());
+    log!("Link search path: {}", current_dir.display());
     println!("cargo:rustc-link-lib=dylib=elsdc");
-    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
+    println!("cargo:rustc-link-arg=-Wl,-rpath,{}", current_dir.display());
 
     // 确认 OpenCV 库
     let opencv = if cfg!(target_os = "macos") {
