@@ -112,6 +112,7 @@ dependencies = [
  "cc",
  "libc",
  "opencv",
+ "pkg-config",
 ]
 
 [[package]]
