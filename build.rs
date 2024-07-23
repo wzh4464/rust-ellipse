@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Thursday, 18th July 2024 4:47:50 pm
+ * Last Modified: Tuesday, 23rd July 2024 10:55:10 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -36,11 +36,14 @@ fn main() {
         panic!("Failed to build ELSDc_c library");
     }
 
-    // 移动 libelsdc.so 到当前文件夹
+    // lib extension is .so on linux and .dylib on macos
+    let lib_ext = if cfg!(target_os = "macos") { "dylib" } else { "so" };
+
+    // 移动 libelsdc.${lib_ext} 到当前文件夹
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let src = current_dir.join("ELSDc_c").join("libelsdc.so");
-    let dest = current_dir.join("libelsdc.so");
-    fs::rename(&src, &dest).expect("Failed to move libelsdc.so to current directory");
+    let src = current_dir.join("ELSDc_c").join("libelsdc").with_extension(lib_ext);
+    let dst = current_dir.join("libelsdc").with_extension(lib_ext);
+    fs::rename(&src, &dst).expect("Failed to move libelsdc");
 
     // 告诉 cargo 链接编译后的共享库
     println!("cargo:rustc-link-search=native={}", current_dir.display());
