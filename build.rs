@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Tuesday, 23rd July 2024 11:06:28 am
+ * Last Modified: Tuesday, 23rd July 2024 11:21:10 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -12,28 +12,53 @@
 **/
 
 use std::env;
-use std::fs;
+use std::fs::{self, File, OpenOptions};
+use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::Command;
 extern crate pkg_config;
 
 fn main() {
-    // 输出所有环境变量到 stderr
+    // 创建 result 文件夹
+    let result_dir = PathBuf::from("result");
+    if !result_dir.exists() {
+        fs::create_dir(&result_dir).expect("Failed to create result directory");
+    }
+
+    // 创建或打开日志文件
+    let log_file_path = result_dir.join("build.log");
+    let mut log_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_file_path)
+        .expect("Failed to open log file");
+
+    // 定义日志记录宏
+    macro_rules! log {
+        ($($arg:tt)*) => ({
+            writeln!(log_file, $($arg)*).expect("Failed to write to log file");
+            writeln!(io::stderr(), $($arg)*).expect("Failed to write to stderr");
+        })
+    }
+
+    // 输出所有环境变量到日志文件和 stderr
+    log!("Environment Variables:");
     for (key, value) in env::vars() {
-        eprintln!("{}: {}", key, value);
+        log!("{}: {}", key, value);
     }
 
     // 确认 make 工具在系统路径中
     let make = env::var("MAKE").unwrap_or_else(|_| "make".to_string());
 
     // 运行 Makefile 编译 C 代码
-    let status = Command::new(make)
+    let status = Command::new(&make)
         .arg("shared")
         .current_dir("ELSDc_c")
         .status()
         .expect("Failed to run make");
 
     if !status.success() {
+        log!("Failed to build ELSDc_c library");
         panic!("Failed to build ELSDc_c library");
     }
 
@@ -42,13 +67,15 @@ fn main() {
 
     // 移动 libelsdc.${lib_ext} 到当前文件夹
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let src = current_dir.join("ELSDc_c").join("libelsdc").with_extension(lib_ext);
-    let dst = current_dir.join("libelsdc").with_extension(lib_ext);
+    let src = current_dir.join("ELSDc_c").join("libelsdc").with_extension(&lib_ext);
+    let dst = current_dir.join("libelsdc").with_extension(&lib_ext);
     fs::rename(&src, &dst).expect("Failed to move libelsdc library to current directory");
+    log!("Moved libelsdc.{} to current directory", lib_ext);
 
     // 告诉 cargo 链接编译后的共享库
     println!("cargo:rustc-link-search=native={}", current_dir.display());
     println!("cargo:rustc-link-lib=dylib=elsdc");
+    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
 
     // 确认 OpenCV 库
     let opencv = if cfg!(target_os = "macos") {
@@ -57,14 +84,18 @@ fn main() {
         pkg_config::Config::new().probe("opencv4").unwrap_or_else(|_| pkg_config::Config::new().probe("opencv").unwrap())
     };
 
-    for path in opencv.link_paths {
+    log!("OpenCV libraries and paths:");
+    for path in &opencv.link_paths {
         println!("cargo:rustc-link-search=native={}", path.display());
+        log!("Link search path: {}", path.display());
     }
-    for lib in opencv.libs {
+    for lib in &opencv.libs {
         println!("cargo:rustc-link-lib={}", lib);
+        log!("Link library: {}", lib);
     }
-    for framework in opencv.frameworks {
+    for framework in &opencv.frameworks {
         println!("cargo:rustc-link-lib=framework={}", framework);
+        log!("Link framework: {}", framework);
     }
 
     // 生成绑定代码
@@ -80,100 +111,6 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Failed to write bindings");
+
+    log!("Bindings generated and written to {}", out_path.display());
 }
-
-// #
-// #  Copyright (c) 2012 viorica patraucean (vpatrauc@gmail.com)
-// #
-// #  This program is free software: you can redistribute it and/or modify
-// #  it under the terms of the GNU Affero General Public License as
-// #  published by the Free Software Foundation, either version 3 of the
-// #  License, or (at your option) any later version.
-// #
-// #  This program is distributed in the hope that it will be useful,
-// #  but WITHOUT ANY WARRANTY; without even the implied warranty of
-// #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// #  GNU Affero General Public License for more details.
-// #
-// #  You should have received a copy of the GNU Affero General Public License
-// #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-// #
-// #  makefile - This file belongs to ELSDc project (Ellipse and Line Segment
-// #             Detector with continuous validation).
-
-// elsdc:
-// 	make -C src
-// 	mv src/elsdc .
-
-// shared:
-// 	make -C src shared
-// 	mv src/libelsdc.so .
-
-// test:
-// 	./elsdc shapes.pgm
-
-// clean:
-// 	rm -f elsdc
-// 	rm -f libelsdc.so
-// 	rm -f src/*.o
-
-// #
-// #  Copyright (c) 2012 viorica patraucean (vpatrauc@gmail.com)
-// #
-// #  This program is free software: you can redistribute it and/or modify
-// #  it under the terms of the GNU Affero General Public License as
-// #  published by the Free Software Foundation, either version 3 of the
-// #  License, or (at your option) any later version.
-// #
-// #  This program is distributed in the hope that it will be useful,
-// #  but WITHOUT ANY WARRANTY; without even the implied warranty of
-// #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// #  GNU Affero General Public License for more details.
-// #
-// #  You should have received a copy of the GNU Affero General Public License
-// #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-// #
-// #  makefile - This file belongs to ELSDc project (Ellipse and Line Segment
-// #             Detector with continuous validation).
-
-// # You may need to indicate the location of Lapack library in your system.
-// # For that, uncomment the following line and replace `/usr/lib` with
-// # the directory where the library is located.
-
-// # if comupter name is mercury, use the following line
-// ifeq ($(shell hostname),mercury)
-// LIB= -L/home/zihan/lib
-// endif
-// OPT= -O3
-// # OPT= -g
-
-// ifeq ($(shell uname),Darwin)
-// LDFLAGS=-L/opt/homebrew/opt/lapack/lib
-// CPPFLAGS=-I/opt/homebrew/opt/lapack/include
-// LAPACK_FLAGS=-DUSE_LAPACKE
-// LAPACK_LIBS=-llapacke
-// else
-// LAPACK_LIBS=-llapack
-// endif
-
-// elsdc: main.c pgm.c svg.c elsdc.c gauss.c curve_grow.c polygon.c ring.c ellipse_fit.c rectangle.c iterator.c image.c lapack_wrapper.c misc.c
-// 	if [ "$(shell hostname)" = "mercury" ]; then \
-// 		cc $(OPT) $(LIB) -o $@ $^ -llapack -lm -lblas -lgfortran; \
-// 	else \
-// 		cc $(OPT) $(LIB) $(CPPFLAGS) $(LDFLAGS) $(LAPACK_FLAGS) -o $@ $^ $(LAPACK_LIBS) -lm; \
-// 	fi
-
-// shared: python_interface.c pgm.c svg.c elsdc.c gauss.c curve_grow.c polygon.c ring.c ellipse_fit.c rectangle.c iterator.c image.c lapack_wrapper.c misc.c
-// 	if [ "$(shell hostname)" = "mercury" ]; then \
-// 		echo "mercury, use gfortran"; \
-// 		cc -c $(OPT) $(LIB) -fpic $^; \
-// 		cc -shared $(OPT) $(LIB) -o libelsdc.so python_interface.o pgm.o svg.o elsdc.o gauss.o curve_grow.o polygon.o ring.o ellipse_fit.o rectangle.o iterator.o image.o lapack_wrapper.o misc.o -llapack -lm -lblas -lgfortran; \
-// 	else \
-// 		cc -c $(OPT) $(LIB) $(CPPFLAGS) $(LAPACK_FLAGS) -fpic $^; \
-// 		cc -shared $(OPT) $(LIB) $(CPPFLAGS) $(LDFLAGS) $(LAPACK_FLAGS) -o libelsdc.so python_interface.o pgm.o svg.o elsdc.o gauss.o curve_grow.o polygon.o ring.o ellipse_fit.o rectangle.o iterator.o image.o lapack_wrapper.o misc.o $(LAPACK_LIBS) -lm; \
-// 	fi
-
-// clean:
-// 	rm elsdc
-// 	rm *.o
-// 	rm *.so
