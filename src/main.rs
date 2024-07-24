@@ -4,7 +4,7 @@ use clap::Parser;
  * Created Date: Monday, July 22nd 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 9:19:55 pm
+ * Last Modified: Wednesday, 24th July 2024 9:27:33 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -14,11 +14,10 @@ use clap::Parser;
 use elsdc::pgm::ensure_pgm_image;
 use elsdc::OpenCVImage;
 use elsdc::{
-    elsdc::{detect_primitives, free_PImageDouble, free_outputs, read_pgm_image_double},
+    elsdc::{detect_primitives, free_PImageDouble, read_pgm_image_double},
     ElsdcError,
 };
 use env_logger::Env;
-use libc::{c_double, c_uint};
 use log::info;
 use opencv::core::{Mat, Scalar, Vector, CV_8UC3};
 use opencv::imgcodecs;
