@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 8:20:04 pm
+ * Last Modified: Wednesday, 24th July 2024 11:14:59 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -15,6 +15,37 @@ use libc::{c_double, c_int, c_uint, c_void};
 use std::ptr::null_mut;
 
 use crate::ring::Ring;
+use serde::{Serialize, Deserialize};
+use std::fs::OpenOptions;
+use std::io::Write;
+
+#[derive(Serialize, Deserialize)]
+struct ELSDcParams {
+    in_img: ImageDoubleInfo,
+    ell_count: i32,
+    ell_out_ptr: usize,
+    ell_labels_ptr: usize,
+    poly_count: i32,
+    poly_out_ptr: usize,
+    poly_labels_ptr: usize,
+    out_img: PImageIntInfo,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ImageDoubleInfo {
+    data_ptr: usize,
+    xsize: u32,
+    ysize: u32,
+    hash: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct PImageIntInfo {
+    data_ptr: usize,
+    xsize: u32,
+    ysize: u32,
+    hash: u64,
+}
 
 #[repr(C)]
 pub struct ImageDouble {
@@ -98,6 +129,37 @@ pub extern "C" fn detect_primitives(
         let mut poly_out: *mut c_void = null_mut();
         let mut poly_labels: *mut c_int = null_mut();
 
+        let params = ELSDcParams {
+            in_img: ImageDoubleInfo {
+                data_ptr: in_img.data as usize,
+                xsize: in_img.xsize,
+                ysize: in_img.ysize,
+                hash: calculate_hash(in_img.data, in_img.xsize * in_img.ysize),
+            },
+            ell_count: *ell_count,
+            ell_out_ptr: *ell_out as usize,
+            ell_labels_ptr: *ell_labels as usize,
+            poly_count,
+            poly_out_ptr: poly_out as usize,
+            poly_labels_ptr: poly_labels as usize,
+            out_img: PImageIntInfo {
+                data_ptr: out_img.data as usize,
+                xsize: out_img.xsize,
+                ysize: out_img.ysize,
+                hash: calculate_hash_int(out_img.data, out_img.xsize * out_img.ysize),
+            },
+        };
+
+        // 序列化参数
+        let params_json = serde_json::to_string(&params).unwrap();
+
+        // 写入日志文件
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open("result/elsdc_params_1.log").unwrap();
+        let _ = writeln!(file, "{}", params_json);
+        
         ELSDc(
             &in_img,
             ell_count,
@@ -230,4 +292,31 @@ mod tests {
             free_outputs(ell_out, ell_labels, ell_count, out);
         }
     }
+}
+
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
+
+fn calculate_hash(data: *const c_double, len: c_uint) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    unsafe {
+        let byte_slice = std::slice::from_raw_parts(
+            data as *const u8,
+            len as usize * std::mem::size_of::<c_double>()
+        );
+        byte_slice.hash(&mut hasher);
+    }
+    hasher.finish()
+}
+
+fn calculate_hash_int(data: *const c_int, len: c_uint) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    unsafe {
+        let byte_slice = std::slice::from_raw_parts(
+            data as *const u8,
+            len as usize * std::mem::size_of::<c_int>()
+        );
+        byte_slice.hash(&mut hasher);
+    }
+    hasher.finish()
 }
