@@ -1,5 +1,3 @@
-extern crate opencv;
-
 use elsdc::elsdc::{detect_primitives, free_PImageDouble, free_outputs, read_pgm_image_double};
 use elsdc::pgm::ensure_pgm_image;
 use libc::{c_double, c_uint};
