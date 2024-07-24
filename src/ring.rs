@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 5:03:59 pm
+ * Last Modified: Wednesday, 24th July 2024 7:23:20 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -17,6 +17,8 @@ use opencv::imgproc;
 use opencv::prelude::*;
 use std::fs::{self, File};
 use std::io::Write;
+
+use crate::ElsdcError;
 
 #[repr(C)]
 #[derive(Clone, Debug)]
@@ -40,44 +42,7 @@ pub struct Ring {
 
 #[allow(unused)]
 impl Ring {
-    pub fn new(
-        x1: c_double,
-        y1: c_double,
-        x2: c_double,
-        y2: c_double,
-        width: c_double,
-        cx: c_double,
-        cy: c_double,
-        theta: c_double,
-        ax: c_double,
-        bx: c_double,
-        ang_start: c_double,
-        ang_end: c_double,
-        wmin: c_double,
-        wmax: c_double,
-        full: c_int,
-        label: c_int,
-    ) -> Self {
-        Self {
-            x1,
-            y1,
-            x2,
-            y2,
-            width,
-            cx,
-            cy,
-            theta,
-            ax,
-            bx,
-            ang_start,
-            ang_end,
-            wmin,
-            wmax,
-            full,
-        }
-    }
-
-    pub fn log_to_file(&self, file: &mut File) -> Result<(), std::io::Error> {
+    pub fn log_to_file(&self, file: &mut File) -> Result<(), ElsdcError> {
         writeln!(
             file,
             "Ring {}: center=({}, {}), axes=({}, {}), angle={}, startAngle={}, endAngle={}, full={}",
@@ -90,29 +55,23 @@ impl Ring {
             self.ang_start,
             self.ang_end,
             self.full
-        )
+        ).map_err(|e| ElsdcError::IoError(e))?;
+        Ok(())
     }
 
-    pub fn draw(&self, img: &mut Mat) -> opencv::Result<()> {
+    pub fn draw(&self, img: &mut Mat) -> Result<(), ElsdcError> {
         let color = Scalar::new(0.0, 255.0, 0.0, 0.0);
         let thickness = 2;
 
-        // mkdir -p result
-        fs::create_dir_all("result").unwrap();
+        fs::create_dir_all("result")?;
 
-        // if exist out_rust.txt then add argument to a new line
-        // if not exist then create a new file and add argument to a new line
         let mut file = std::fs::OpenOptions::new()
             .append(true)
             .create(true)
             .open("result/out_rust.txt")
-            .unwrap();
+            .map_err(|e| ElsdcError::IoError(e))?;
 
-        // match self.log_to_file(&mut file)
-        match self.log_to_file(&mut file) {
-            Ok(_) => {},
-            Err(e) => eprintln!("Failed to log ring to file: {}", e),
-        };
+        self.log_to_file(&mut file)?;
 
         if self.full != 0 {
             imgproc::ellipse(
@@ -126,7 +85,8 @@ impl Ring {
                 thickness,
                 imgproc::LINE_8,
                 0,
-            )?;
+            )
+            .map_err(|e| ElsdcError::OpenCVError(e))?;
         } else {
             imgproc::ellipse(
                 img,
@@ -139,7 +99,8 @@ impl Ring {
                 thickness,
                 imgproc::LINE_8,
                 0,
-            )?;
+            )
+            .map_err(|e| ElsdcError::OpenCVError(e))?;
         }
 
         Ok(())
@@ -151,9 +112,15 @@ impl Ring {
             (self.cx.max(other.cx) * 2.0) as i32,
             (self.cy.max(other.cy) * 2.0) as i32,
         );
-        let mut mask1 = Mat::zeros(size.height, size.width, opencv::core::CV_8UC1).unwrap().to_mat().unwrap();
-        let mut mask2 = Mat::zeros(size.height, size.width, opencv::core::CV_8UC1).unwrap().to_mat().unwrap();
-    
+        let mut mask1 = Mat::zeros(size.height, size.width, opencv::core::CV_8UC1)
+            .unwrap()
+            .to_mat()
+            .unwrap();
+        let mut mask2 = Mat::zeros(size.height, size.width, opencv::core::CV_8UC1)
+            .unwrap()
+            .to_mat()
+            .unwrap();
+
         // 绘制椭圆
         imgproc::ellipse(
             &mut mask1,
@@ -166,8 +133,9 @@ impl Ring {
             -1,
             imgproc::LINE_8,
             0,
-        ).unwrap();
-    
+        )
+        .unwrap();
+
         imgproc::ellipse(
             &mut mask2,
             Point::new(other.cx as i32, other.cy as i32),
@@ -179,18 +147,19 @@ impl Ring {
             -1,
             imgproc::LINE_8,
             0,
-        ).unwrap();
-    
+        )
+        .unwrap();
+
         // 计算交集和并集
         let mut intersection = Mat::default();
         let mut union = Mat::default();
         opencv::core::bitwise_and(&mask1, &mask2, &mut intersection, &Mat::default()).unwrap();
         opencv::core::bitwise_or(&mask1, &mask2, &mut union, &Mat::default()).unwrap();
-    
+
         // 计算非零像素数量
         let intersection_area = opencv::core::count_non_zero(&intersection).unwrap() as f64;
         let union_area = opencv::core::count_non_zero(&union).unwrap() as f64;
-    
+
         // 计算IOU
         if union_area == 0.0 {
             0.0
@@ -207,10 +176,21 @@ mod tests {
     #[test]
     fn test_iou_identical_rings() {
         let ring1 = Ring {
-            x1: 0.0, y1: 0.0, x2: 1.0, y2: 1.0,
-            width: 1.0, cx: 0.5, cy: 0.5, theta: 0.0,
-            ax: 0.5, bx: 0.5, ang_start: 0.0, ang_end: 2.0 * std::f64::consts::PI,
-            wmin: 0.0, wmax: 1.0, full: 1,
+            x1: 0.0,
+            y1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            width: 1.0,
+            cx: 0.5,
+            cy: 0.5,
+            theta: 0.0,
+            ax: 0.5,
+            bx: 0.5,
+            ang_start: 0.0,
+            ang_end: 2.0 * std::f64::consts::PI,
+            wmin: 0.0,
+            wmax: 1.0,
+            full: 1,
         };
         let ring2 = ring1.clone();
         assert_eq!(ring1.iou(&ring2), 1.0);
@@ -219,16 +199,38 @@ mod tests {
     #[test]
     fn test_iou_non_overlapping_rings() {
         let ring1 = Ring {
-            x1: 0.0, y1: 0.0, x2: 1.0, y2: 1.0,
-            width: 1.0, cx: 0.5, cy: 0.5, theta: 0.0,
-            ax: 0.5, bx: 0.5, ang_start: 0.0, ang_end: 2.0 * std::f64::consts::PI,
-            wmin: 0.0, wmax: 1.0, full: 1,
+            x1: 0.0,
+            y1: 0.0,
+            x2: 1.0,
+            y2: 1.0,
+            width: 1.0,
+            cx: 0.5,
+            cy: 0.5,
+            theta: 0.0,
+            ax: 0.5,
+            bx: 0.5,
+            ang_start: 0.0,
+            ang_end: 2.0 * std::f64::consts::PI,
+            wmin: 0.0,
+            wmax: 1.0,
+            full: 1,
         };
         let ring2 = Ring {
-            x1: 2.0, y1: 2.0, x2: 3.0, y2: 3.0,
-            width: 1.0, cx: 2.5, cy: 2.5, theta: 0.0,
-            ax: 0.5, bx: 0.5, ang_start: 0.0, ang_end: 2.0 * std::f64::consts::PI,
-            wmin: 0.0, wmax: 1.0, full: 1,
+            x1: 2.0,
+            y1: 2.0,
+            x2: 3.0,
+            y2: 3.0,
+            width: 1.0,
+            cx: 2.5,
+            cy: 2.5,
+            theta: 0.0,
+            ax: 0.5,
+            bx: 0.5,
+            ang_start: 0.0,
+            ang_end: 2.0 * std::f64::consts::PI,
+            wmin: 0.0,
+            wmax: 1.0,
+            full: 1,
         };
         assert_eq!(ring1.iou(&ring2), 0.0);
     }
@@ -236,16 +238,38 @@ mod tests {
     #[test]
     fn test_iou_partially_overlapping_rings() {
         let ring1 = Ring {
-            x1: 0.0, y1: 0.0, x2: 2.0, y2: 2.0,
-            width: 1.0, cx: 1.0, cy: 1.0, theta: 0.0,
-            ax: 1.0, bx: 1.0, ang_start: 0.0, ang_end: 2.0 * std::f64::consts::PI,
-            wmin: 0.0, wmax: 1.0, full: 1,
+            x1: 0.0,
+            y1: 0.0,
+            x2: 2.0,
+            y2: 2.0,
+            width: 1.0,
+            cx: 1.0,
+            cy: 1.0,
+            theta: 0.0,
+            ax: 1.0,
+            bx: 1.0,
+            ang_start: 0.0,
+            ang_end: 2.0 * std::f64::consts::PI,
+            wmin: 0.0,
+            wmax: 1.0,
+            full: 1,
         };
         let ring2 = Ring {
-            x1: 1.0, y1: 1.0, x2: 3.0, y2: 3.0,
-            width: 1.0, cx: 2.0, cy: 2.0, theta: 0.0,
-            ax: 1.0, bx: 1.0, ang_start: 0.0, ang_end: 2.0 * std::f64::consts::PI,
-            wmin: 0.0, wmax: 1.0, full: 1,
+            x1: 1.0,
+            y1: 1.0,
+            x2: 3.0,
+            y2: 3.0,
+            width: 1.0,
+            cx: 2.0,
+            cy: 2.0,
+            theta: 0.0,
+            ax: 1.0,
+            bx: 1.0,
+            ang_start: 0.0,
+            ang_end: 2.0 * std::f64::consts::PI,
+            wmin: 0.0,
+            wmax: 1.0,
+            full: 1,
         };
         let iou = ring1.iou(&ring2);
         assert!(iou > 0.0 && iou < 1.0);

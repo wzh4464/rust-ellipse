@@ -3,7 +3,7 @@
  * Created Date: Monday, July 22nd 2024
  * Author: Zihan
  * -----
- * Last Modified: Tuesday, 23rd July 2024 12:54:29 pm
+ * Last Modified: Wednesday, 24th July 2024 7:21:38 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -18,6 +18,7 @@ use std::path::Path;
 use opencv::core::Vector;
 use opencv::imgcodecs::{self, IMREAD_GRAYSCALE};
 
+use crate::ElsdcError;
 
 #[derive(Debug)]
 pub struct PImageDouble {
@@ -56,7 +57,10 @@ pub fn read_pgm_image_double_rust(filename: &str) -> io::Result<PImageDouble> {
             let mut pixel_value = String::new();
             reader.read_line(&mut pixel_value)?;
             *value = pixel_value.trim().parse::<f64>().map_err(|e| {
-                io::Error::new(io::ErrorKind::InvalidData, format!("Invalid pixel value: {}", e))
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Invalid pixel value: {}", e),
+                )
             })?;
         }
     }
@@ -97,39 +101,55 @@ pub fn read_pgm_header<R: BufRead>(reader: &mut R) -> io::Result<(usize, usize, 
         }
     }
 
-    let width = width.trim().parse::<usize>().map_err(|e| {
-        io::Error::new(io::ErrorKind::InvalidData, format!("Invalid width: {}", e))
-    })?;
+    let width = width
+        .trim()
+        .parse::<usize>()
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Invalid width: {}", e)))?;
     let height = height.trim().parse::<usize>().map_err(|e| {
         io::Error::new(io::ErrorKind::InvalidData, format!("Invalid height: {}", e))
     })?;
-    let depth = depth.trim().parse::<usize>().map_err(|e| {
-        io::Error::new(io::ErrorKind::InvalidData, format!("Invalid depth: {}", e))
-    })?;
+    let depth = depth
+        .trim()
+        .parse::<usize>()
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Invalid depth: {}", e)))?;
 
     Ok((width, height, depth))
 }
 
 pub fn scale_data(data: &mut [f64], max_value: f64) {
-    let min = *data.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
-    let max = *data.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+    let min = *data
+        .iter()
+        .min_by(|a, b| a.partial_cmp(b).unwrap())
+        .unwrap();
+    let max = *data
+        .iter()
+        .max_by(|a, b| a.partial_cmp(b).unwrap())
+        .unwrap();
     for v in data.iter_mut() {
         *v = (*v - min) / (max - min) * max_value;
     }
 }
 
-pub fn ensure_pgm_image(filename: &str) -> io::Result<String> {
+pub fn ensure_pgm_image(filename: &str) -> Result<String, ElsdcError> {
     if filename.to_lowercase().ends_with(".pgm") {
         return Ok(filename.to_string());
     }
 
-    let img = imgcodecs::imread(filename, IMREAD_GRAYSCALE)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to read image: {}", e)))?;
+    let img =
+        imgcodecs::imread(filename, IMREAD_GRAYSCALE).map_err(|e| ElsdcError::OpenCVError(e))?;
 
-    let new_filename = format!("pgm/{}.pgm", Path::new(filename).file_stem().unwrap().to_string_lossy());
+    let new_filename = format!(
+        "pgm/{}.pgm",
+        Path::new(filename)
+            .file_stem()
+            .ok_or_else(|| ElsdcError::DetectionError("Invalid filename".to_string()))?
+            .to_string_lossy()
+    );
+
     fs::create_dir_all("pgm")?;
+
     imgcodecs::imwrite(&new_filename, &img, &Vector::new())
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to write PGM image: {}", e)))?;
+        .map_err(|e| ElsdcError::OpenCVError(e))?;
 
     Ok(new_filename)
 }

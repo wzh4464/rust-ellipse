@@ -1,3 +1,6 @@
 pub mod elsdc;
-pub mod ring;
+pub mod error;
 pub mod pgm;
+pub mod ring;
+
+pub use error::ElsdcError;
