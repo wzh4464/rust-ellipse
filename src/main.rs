@@ -4,7 +4,7 @@ use clap::Parser;
  * Created Date: Monday, July 22nd 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 9:27:33 pm
+ * Last Modified: Wednesday, 24th July 2024 11:34:41 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -75,7 +75,8 @@ fn main() -> Result<(), ElsdcError> {
     let mut ell_labels: *mut libc::c_int = ptr::null_mut();
     let mut ell_count: libc::c_int = 0;
     let mut out: *mut libc::c_int = ptr::null_mut();
-    let mut image = OpenCVImage::new(xsize, ysize)?;
+    // image is from img_double
+    let mut image = OpenCVImage::try_from(img_double)?;
     let mut opencv_image = OpenCVImage::new(xsize, ysize)?;
 
     let primitives = detect_primitives(

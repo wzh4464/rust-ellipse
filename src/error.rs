@@ -3,7 +3,7 @@
  * Created Date: Wednesday, July 24th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 9:18:39 pm
+ * Last Modified: Wednesday, 24th July 2024 11:37:46 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -21,7 +21,7 @@ pub enum ElsdcError {
     OpenCVError(OpenCVError),
     ImageReadError(String),
     DetectionError(String),
-    ImageConversionError,
+    ImageConversionError(String),
     // 添加其他可能的错误类型
 }
 
@@ -32,7 +32,7 @@ impl fmt::Display for ElsdcError {
             ElsdcError::OpenCVError(e) => write!(f, "OpenCV error: {}", e),
             ElsdcError::ImageReadError(s) => write!(f, "Image read error: {}", s),
             ElsdcError::DetectionError(s) => write!(f, "Detection error: {}", s),
-            ElsdcError::ImageConversionError => write!(f, "Image conversion error"),
+            ElsdcError::ImageConversionError(s) => write!(f, "Image conversion error: {}", s),
         }
     }
 }
