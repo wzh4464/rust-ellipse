@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 9:28:43 pm
+ * Last Modified: Wednesday, 24th July 2024 9:51:26 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -69,7 +69,7 @@ extern "C" {
 ///
 /// This function uses raw pointers and should be called carefully.
 #[no_mangle]
-pub extern "C" fn detect_primitives(
+pub fn detect_primitives(
     image: &mut dyn Image,
     ell_out: &mut *mut Ring,
     ell_labels: &mut *mut c_int,

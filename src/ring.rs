@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 9:11:04 pm
+ * Last Modified: Wednesday, 24th July 2024 9:51:40 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -13,7 +13,6 @@
 
 use libc::{c_double, c_int};
 use opencv::core::{Point, Scalar, Size};
-use opencv::prelude::*;
 use std::fs::{self, File};
 use std::io::Write;
 use opencv::{core, imgproc, prelude::*};
