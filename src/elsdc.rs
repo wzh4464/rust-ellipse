@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 11:20:29 pm
+ * Last Modified: Wednesday, 24th July 2024 11:23:43 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -153,6 +153,8 @@ pub fn detect_primitives(
             .open("result/elsdc_params_2.log").unwrap();
         let _ = writeln!(file, "{}", params_json);
         
+        // save in_img to result/elsdc_in_img.png
+
         ELSDc(
             &in_img,
             ell_count,

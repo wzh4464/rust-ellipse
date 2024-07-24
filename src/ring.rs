@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 9:51:40 pm
+ * Last Modified: Wednesday, 24th July 2024 11:38:10 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -23,7 +23,7 @@ use crate::image_processing::OpenCVImage;
 impl Primitive for Ring {
     fn draw(&self, image: &mut dyn Image) -> Result<(), Box<dyn std::error::Error>> {
         let opencv_image = image.as_any_mut().downcast_mut::<OpenCVImage>()
-            .ok_or_else(|| Box::new(ElsdcError::ImageConversionError) as Box<dyn std::error::Error>)?;
+            .ok_or_else(|| Box::new(ElsdcError::ImageConversionError("Failed to downcast Image to OpenCVImage".to_string())))?;
     
         let mut mat = opencv_image.mat.clone();
 
