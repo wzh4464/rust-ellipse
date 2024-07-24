@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 9:51:26 pm
+ * Last Modified: Wednesday, 24th July 2024 10:17:58 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -32,11 +32,6 @@ pub struct PImageInt {
     pub ysize: c_uint,
 }
 
-impl PImageInt {
-    unsafe fn from_ptr<'a>(ptr: *mut c_int) -> &'a PImageInt {
-        &*(ptr as *const PImageInt)
-    }
-}
 extern "C" {
     fn ELSDc(
         in_img: *const ImageDouble,
@@ -116,28 +111,6 @@ pub fn detect_primitives(
         *out = Box::into_raw(out_data.into_boxed_slice()) as *mut c_int;
 
         Ok(primitives)
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn free_outputs(
-    ell_out: *mut Ring,
-    ell_labels: *mut c_int,
-    ell_count: c_int,
-    out: *mut c_int,
-) {
-    unsafe {
-        if !ell_out.is_null() {
-            let _ = Vec::from_raw_parts(ell_out, ell_count as usize, ell_count as usize);
-        }
-        if !ell_labels.is_null() {
-            let _ = Vec::from_raw_parts(ell_labels, ell_count as usize, ell_count as usize);
-        }
-        if !out.is_null() {
-            let out_size =
-                (PImageInt::from_ptr(out).xsize * PImageInt::from_ptr(out).ysize) as usize;
-            let _ = Vec::from_raw_parts(out, out_size, out_size);
-        }
     }
 }
 

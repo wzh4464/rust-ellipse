@@ -17,3 +17,6 @@ pkg-config = "0.3.30"
 
 [package.metadata]
 build = "build.rs"
+
+[lints.clippy]
+tabs_in_doc_comments = "allow"
