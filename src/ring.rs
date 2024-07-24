@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 11:38:10 pm
+ * Last Modified: Thursday, 25th July 2024 12:24:36 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -116,6 +116,7 @@ impl Ring {
         Ok(())
     }
 
+    /// 绘制椭圆到图像
     pub fn draw(&self, img: &mut Mat) -> Result<(), ElsdcError> {
         let color = Scalar::new(0.0, 255.0, 0.0, 0.0);
         let thickness = 2;
@@ -163,6 +164,7 @@ impl Ring {
         Ok(())
     }
 
+    /// 计算两个椭圆的交并比
     pub fn iou(&self, other: &Ring) -> f64 {
         // 创建两个椭圆的mask
         let size = Size::new(
@@ -223,6 +225,22 @@ impl Ring {
         } else {
             intersection_area / union_area
         }
+    }
+
+    /// 生成一组椭圆的兼容性矩阵
+    pub fn generate_compatibility_matrix(rings: &[Ring]) -> Vec<Vec<f64>> {
+        let n = rings.len();
+        let mut matrix = vec![vec![0.0; n]; n];
+
+        for i in 0..n {
+            for j in i..n {
+                let iou = rings[i].iou(&rings[j]);
+                matrix[i][j] = iou;
+                matrix[j][i] = iou; // 矩阵是对称的
+            }
+        }
+
+        matrix
     }
 }
 

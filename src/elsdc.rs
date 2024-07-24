@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Thursday, 25th July 2024 12:15:01 am
+ * Last Modified: Thursday, 25th July 2024 12:28:32 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -70,7 +70,7 @@ pub fn detect_primitives(
     ell_labels: &mut *mut c_int,
     ell_count: &mut c_int,
     out: &mut *mut c_int,
-) -> Result<Vec<Box<dyn Primitive>>, Box<dyn std::error::Error>> {
+) -> Result<(Vec<Box<dyn Primitive>>, Vec<Vec<f64>>), Box<dyn std::error::Error>> {
     unsafe {
         let in_img = ImageDouble {
             data: image.as_mut_ptr(),
@@ -103,18 +103,23 @@ pub fn detect_primitives(
         );
 
         let mut primitives = Vec::new();
+        let mut rings = Vec::new();
         for i in 0..*ell_count {
             let ring = &*(*ell_out).add(i as usize);
             primitives.push(Box::new(ring.clone()) as Box<dyn Primitive>);
+            rings.push(ring.clone());
         }
+
+        let compatibility_matrix = Ring::generate_compatibility_matrix(&rings);
 
         *out = Box::into_raw(out_data.into_boxed_slice()) as *mut c_int;
 
-        Ok(primitives)
+        Ok((primitives, compatibility_matrix))
     }
 }
 
-pub fn detect_primitives_on_real_image(image_path: &str) -> Result<Vec<Box<dyn Primitive>>, ElsdcError> {
+/// Detects primitives in the given image file.
+pub fn detect_primitives_on_real_image(image_path: &str) -> Result<(Vec<Box<dyn Primitive>>, Vec<Vec<f64>>), ElsdcError> {
     let pgm_filename = crate::pgm::ensure_pgm_image(image_path)?;
     let cstring_filename = std::ffi::CString::new(pgm_filename.clone())
         .map_err(|e| ElsdcError::DetectionError(e.to_string()))?;
@@ -131,7 +136,7 @@ pub fn detect_primitives_on_real_image(image_path: &str) -> Result<Vec<Box<dyn P
     let mut ell_count: c_int = 0;
     let mut out: *mut c_int = std::ptr::null_mut();
 
-    let primitives = detect_primitives(
+    let (primitives, compatibility_matrix) = detect_primitives(
         &mut image,
         &mut ell_out,
         &mut ell_labels,
@@ -143,7 +148,7 @@ pub fn detect_primitives_on_real_image(image_path: &str) -> Result<Vec<Box<dyn P
         free_PImageDouble(img_double);
     }
 
-    Ok(primitives)
+    Ok((primitives, compatibility_matrix))
 }
 
 #[cfg(test)]
@@ -175,7 +180,7 @@ mod tests {
         let mut ell_count: c_int = 0;
         let mut out: *mut c_int = null_mut();
 
-        let primitives = detect_primitives(
+        let (primitives, compatibility_matrix) = detect_primitives(
             &mut image,
             &mut ell_out,
             &mut ell_labels,
@@ -183,8 +188,18 @@ mod tests {
             &mut out,
         )
         .unwrap();
+        
         log::debug!("Detected {} primitives", primitives.len());
         assert!(!primitives.is_empty());
+        assert_eq!(primitives.len(), compatibility_matrix.len());
+        
+        // 检查兼容性矩阵的有效性
+        for row in &compatibility_matrix {
+            assert_eq!(row.len(), primitives.len());
+            for &value in row {
+                assert!(value >= 0.0 && value <= 1.0);
+            }
+        }
 
         let first_primitive = &primitives[0];
         if let Some(ring) = first_primitive.as_any().downcast_ref::<Ring>() {
@@ -205,7 +220,9 @@ mod tests {
             return;
         }
 
-        let primitives = detect_primitives_on_real_image(image_path).unwrap();
+        let (primitives, compatibility_matrix) = detect_primitives_on_real_image(image_path).unwrap();
         assert_eq!(primitives.len(), 46, "Expected to find 46 primitives");
+        assert_eq!(compatibility_matrix.len(), 46);
+        assert_eq!(compatibility_matrix[0].len(), 46);
     }
 }
