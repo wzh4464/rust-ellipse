@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 7:52:15 pm
+ * Last Modified: Wednesday, 24th July 2024 9:11:04 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -13,12 +13,69 @@
 
 use libc::{c_double, c_int};
 use opencv::core::{Point, Scalar, Size};
-use opencv::imgproc;
 use opencv::prelude::*;
 use std::fs::{self, File};
 use std::io::Write;
-
+use opencv::{core, imgproc, prelude::*};
+use crate::primitives::{Primitive, Image};
 use crate::ElsdcError;
+use crate::image_processing::OpenCVImage;
+
+impl Primitive for Ring {
+    fn draw(&self, image: &mut dyn Image) -> Result<(), Box<dyn std::error::Error>> {
+        let opencv_image = image.as_any_mut().downcast_mut::<OpenCVImage>()
+            .ok_or_else(|| Box::new(ElsdcError::ImageConversionError) as Box<dyn std::error::Error>)?;
+    
+        let mut mat = opencv_image.mat.clone();
+
+        let center = core::Point::new(self.cx as i32, self.cy as i32);
+        let axes = core::Size::new(self.ax as i32, self.bx as i32);
+        let color = core::Scalar::new(255.0, 255.0, 255.0, 0.0); // 白色
+        let thickness = 2;
+
+        if self.full != 0 {
+            imgproc::ellipse(
+                &mut mat,
+                center,
+                axes,
+                self.theta * 180.0 / std::f64::consts::PI,
+                0.0,
+                360.0,
+                color,
+                thickness,
+                imgproc::LINE_8,
+                0,
+            )?;
+        } else {
+            imgproc::ellipse(
+                &mut mat,
+                center,
+                axes,
+                self.theta * 180.0 / std::f64::consts::PI,
+                self.ang_start * 180.0 / std::f64::consts::PI,
+                self.ang_end * 180.0 / std::f64::consts::PI,
+                color,
+                thickness,
+                imgproc::LINE_8,
+                0,
+            )?;
+        }
+
+        // 将修改后的 mat 复制回 OpenCVImage
+        opencv_image.mat = mat;
+
+        Ok(())
+    }
+
+    fn to_string(&self) -> String {
+        format!("Ring: center=({}, {}), axes=({}, {}), angle={}", 
+                self.cx, self.cy, self.ax, self.bx, self.theta)
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
 
 /// Represents an ellipse or circular arc detected in an image.
 #[repr(C)]
