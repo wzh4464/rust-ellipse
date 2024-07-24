@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 7:51:39 pm
+ * Last Modified: Wednesday, 24th July 2024 8:18:24 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -83,9 +83,6 @@ pub extern "C" fn detect_primitives(
         let mut out_data: Vec<c_int> = vec![0; (xsize * ysize) as usize];
         let out_data_ptr: *mut c_int = out_data.as_mut_ptr();
 
-        // Ensure out_data is not deallocated
-        std::mem::forget(out_data);
-
         let mut out_img = PImageInt {
             data: out_data_ptr,
             xsize,
@@ -107,7 +104,9 @@ pub extern "C" fn detect_primitives(
             &mut out_img,
         );
 
-        *out = out_img.data;
+        let boxed_out_data = out_data.into_boxed_slice();
+        *out = Box::into_raw(boxed_out_data) as *mut c_int;
+
         0 // Success
     }
 }
