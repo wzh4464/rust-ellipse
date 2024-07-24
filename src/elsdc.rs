@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 8:18:24 pm
+ * Last Modified: Wednesday, 24th July 2024 8:20:04 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -31,6 +31,11 @@ pub struct PImageInt {
     pub ysize: c_uint,
 }
 
+impl PImageInt {
+    unsafe fn from_ptr<'a>(ptr: *mut c_int) -> &'a PImageInt {
+        &*(ptr as *const PImageInt)
+    }
+}
 extern "C" {
     fn ELSDc(
         in_img: *const ImageDouble,
@@ -118,14 +123,16 @@ pub extern "C" fn free_outputs(
     ell_count: c_int,
     out: *mut c_int,
 ) {
-    let _ = ell_count;
     unsafe {
         if !ell_out.is_null() {
-            let _ = Box::from_raw(ell_out);
-            let _ = Box::from_raw(ell_labels);
+            let _ = Vec::from_raw_parts(ell_out, ell_count as usize, ell_count as usize);
+        }
+        if !ell_labels.is_null() {
+            let _ = Vec::from_raw_parts(ell_labels, ell_count as usize, ell_count as usize);
         }
         if !out.is_null() {
-            let _ = Box::from_raw(out);
+            let out_size = ((*PImageInt::from_ptr(out)).xsize * (*PImageInt::from_ptr(out)).ysize) as usize;
+            let _ = Vec::from_raw_parts(out, out_size, out_size);
         }
     }
 }
