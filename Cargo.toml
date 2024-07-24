@@ -5,12 +5,13 @@ edition = "2021"
 
 [dependencies]
 libc = "0.2.155"
-opencv = { version = "0.92.0", features = ["clang-runtime"] }
+clap = { version = "4.5.10", features = ["derive"] }
+opencv = { version = "0.92.1", features = ["clang-runtime"] }
 
 [build-dependencies]
-cc = "1.1.5"
+cc = "1.1.6"
 bindgen = "0.69.4"
-pkg-config = "0.3.19"
+pkg-config = "0.3.30"
 
 [package.metadata]
 build = "build.rs"

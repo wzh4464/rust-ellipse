@@ -3,7 +3,7 @@
  * Created Date: Monday, July 22nd 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 7:20:55 pm
+ * Last Modified: Wednesday, 24th July 2024 7:59:12 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -20,18 +20,31 @@ use libc::{c_double, c_uint};
 use opencv::core::{Mat, Scalar, Vector, CV_8UC3};
 use opencv::imgcodecs;
 use opencv::prelude::*;
-use std::env;
 use std::ffi::CString;
 use std::ptr;
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Input image file
+    #[clap(value_parser)]
+    input: String,
+
+    /// Output image file
+    #[clap(short, long, value_parser)]
+    output: Option<String>,
+
+    /// Verbose mode
+    #[clap(short, long)]
+    verbose: bool,
+}
 
 fn main() -> Result<(), ElsdcError> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        return Err(ElsdcError::DetectionError("Usage: {} <image_file>".into()));
-    }
+    let args = Args::parse();
 
-    let filename = &args[1];
-    let pgm_filename = ensure_pgm_image(filename)?;
+    let filename =  args.input;
+    let pgm_filename = ensure_pgm_image(&filename)?;
 
     let cstring_filename = CString::new(pgm_filename.clone())
         .map_err(|e| ElsdcError::DetectionError(e.to_string()))?;
