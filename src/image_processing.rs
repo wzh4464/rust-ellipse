@@ -1,9 +1,10 @@
+use crate::pgm::ensure_pgm_image;
 /**
  * File: /src/image_processing.rs
  * Created Date: Wednesday, July 24th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 11:36:53 pm
+ * Last Modified: Thursday, 25th July 2024 12:16:16 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -35,8 +36,14 @@ impl OpenCVImage {
         Ok(Self { mat })
     }
 
-    pub fn save(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
-        imgcodecs::imwrite(filename, &self.mat, &Vector::new())?;
+    pub fn save(&self, path: &str) -> Result<(), ElsdcError> {
+        let mut mat_8u = Mat::default();
+        self.mat.convert_to(&mut mat_8u, opencv::core::CV_8U, 255.0, 0.0)
+            .map_err(|e| ElsdcError::OpenCVError(e))?;
+
+        imgcodecs::imwrite(path, &mat_8u, &Vector::new())
+            .map_err(|e| ElsdcError::OpenCVError(e))?;
+
         Ok(())
     }
 }
@@ -70,6 +77,34 @@ impl TryFrom<*mut ImageDouble> for OpenCVImage {
 
             Ok(OpenCVImage { mat })
         }
+    }
+}
+
+impl TryFrom<&str> for OpenCVImage {
+    type Error = ElsdcError;
+
+    fn try_from(path: &str) -> Result<Self, Self::Error> {
+        // 确保输入图像是 PGM 格式
+        let pgm_path = ensure_pgm_image(path)?;
+
+        // 读取 PGM 图像
+        let mat = imgcodecs::imread(&pgm_path, imgcodecs::IMREAD_GRAYSCALE)
+            .map_err(|e| ElsdcError::OpenCVError(e))?;
+
+        // 将图像转换为 CV_64F 格式（双精度浮点数）
+        let mut mat_64f = Mat::default();
+        mat.convert_to(&mut mat_64f, opencv::core::CV_64F, 1.0, 0.0)
+            .map_err(|e| ElsdcError::OpenCVError(e))?;
+
+        Ok(OpenCVImage { mat: mat_64f })
+    }
+}
+
+impl TryFrom<&String> for OpenCVImage {
+    type Error = ElsdcError;
+
+    fn try_from(path: &String) -> Result<Self, Self::Error> {
+        OpenCVImage::try_from(path.as_str())
     }
 }
 

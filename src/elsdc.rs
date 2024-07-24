@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 11:46:46 pm
+ * Last Modified: Thursday, 25th July 2024 12:15:01 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -16,6 +16,7 @@ use std::ptr::null_mut;
 
 use crate::primitives::{Image, Primitive};
 use crate::ring::Ring;
+use crate::{ElsdcError, OpenCVImage};
 
 #[repr(C)]
 pub struct ImageDouble {
@@ -63,7 +64,6 @@ extern "C" {
 /// # Safety
 ///
 /// This function uses raw pointers and should be called carefully.
-#[no_mangle]
 pub fn detect_primitives(
     image: &mut dyn Image,
     ell_out: &mut *mut Ring,
@@ -114,6 +114,38 @@ pub fn detect_primitives(
     }
 }
 
+pub fn detect_primitives_on_real_image(image_path: &str) -> Result<Vec<Box<dyn Primitive>>, ElsdcError> {
+    let pgm_filename = crate::pgm::ensure_pgm_image(image_path)?;
+    let cstring_filename = std::ffi::CString::new(pgm_filename.clone())
+        .map_err(|e| ElsdcError::DetectionError(e.to_string()))?;
+    
+    let img_double = unsafe { read_pgm_image_double(cstring_filename.as_ptr()) };
+    if img_double.is_null() {
+        return Err(ElsdcError::ImageReadError("Failed to read PGM image".into()));
+    }
+
+    let mut image = OpenCVImage::try_from(img_double)?;
+    
+    let mut ell_out: *mut Ring = std::ptr::null_mut();
+    let mut ell_labels: *mut c_int = std::ptr::null_mut();
+    let mut ell_count: c_int = 0;
+    let mut out: *mut c_int = std::ptr::null_mut();
+
+    let primitives = detect_primitives(
+        &mut image,
+        &mut ell_out,
+        &mut ell_labels,
+        &mut ell_count,
+        &mut out,
+    )?;
+
+    unsafe {
+        free_PImageDouble(img_double);
+    }
+
+    Ok(primitives)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,5 +194,18 @@ mod tests {
         } else {
             panic!("First primitive is not a Ring");
         }
+    }
+
+    #[test]
+    fn test_detect_primitives_on_real_image() {
+        let image_path = "ELSDc_c/Dataset4_mydataset/043_0011.jpg";
+        
+        if !std::path::Path::new(image_path).exists() {
+            // 如果图像不存在，测试通过
+            return;
+        }
+
+        let primitives = detect_primitives_on_real_image(image_path).unwrap();
+        assert_eq!(primitives.len(), 46, "Expected to find 46 primitives");
     }
 }
