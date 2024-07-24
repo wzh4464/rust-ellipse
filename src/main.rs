@@ -3,7 +3,7 @@
  * Created Date: Monday, July 22nd 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 8:13:43 pm
+ * Last Modified: Wednesday, 24th July 2024 10:46:07 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -89,7 +89,7 @@ fn main() -> Result<(), ElsdcError> {
         );
 
         if result == 0 {
-            info!("Detection successful!");
+            info!("Detection {} rings", ell_count);
 
             let mut img_all_ellipses = Mat::new_rows_cols_with_default(
                 ysize as i32,
