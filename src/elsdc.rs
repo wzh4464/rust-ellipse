@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 7:45:06 pm
+ * Last Modified: Wednesday, 24th July 2024 7:51:39 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -47,6 +47,21 @@ extern "C" {
     pub fn free_PImageDouble(image: *mut ImageDouble);
 }
 
+/// Detects ellipses and circular arcs in the given image data.
+///
+/// # Arguments
+///
+/// * `ell_out` - Pointer to store detected ellipses
+/// * `ell_labels` - Pointer to store labels for detected ellipses
+/// * `ell_count` - Pointer to store the count of detected ellipses
+/// * `out` - Pointer to store output image data
+/// * `in_data` - Input image data
+/// * `xsize` - Width of the input image
+/// * `ysize` - Height of the input image
+///
+/// # Safety
+///
+/// This function uses raw pointers and should be called carefully.
 #[no_mangle]
 pub extern "C" fn detect_primitives(
     ell_out: &mut *mut Ring,

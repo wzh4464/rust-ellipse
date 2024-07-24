@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 7:47:39 pm
+ * Last Modified: Wednesday, 24th July 2024 7:52:15 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -20,6 +20,7 @@ use std::io::Write;
 
 use crate::ElsdcError;
 
+/// Represents an ellipse or circular arc detected in an image.
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct Ring {
