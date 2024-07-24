@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 7:23:20 pm
+ * Last Modified: Wednesday, 24th July 2024 7:47:39 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -273,5 +273,51 @@ mod tests {
         };
         let iou = ring1.iou(&ring2);
         assert!(iou > 0.0 && iou < 1.0);
+    }
+
+    #[test]
+    fn test_ring_draw() {
+        let ring = Ring {
+            x1: 0.0,
+            y1: 0.0,
+            x2: 100.0,
+            y2: 100.0,
+            width: 2.0,
+            cx: 50.0,
+            cy: 50.0,
+            theta: 0.0,
+            ax: 25.0,
+            bx: 25.0,
+            ang_start: 0.0,
+            ang_end: 2.0 * std::f64::consts::PI,
+            wmin: 1.0,
+            wmax: 3.0,
+            full: 1,
+        };
+
+        let mut img = Mat::new_rows_cols_with_default(100, 100, opencv::core::CV_8UC3, Scalar::all(0.0)).unwrap();
+        
+        ring.draw(&mut img).unwrap();
+
+        // 检查图像中是否有非黑色像素（椭圆被绘制）
+        let mut has_non_black = false;
+        for i in 0..100 {
+            for j in 0..100 {
+                let pixel = img.at_2d::<opencv::core::Vec3b>(i, j).unwrap();
+                if pixel[0] != 0 || pixel[1] != 0 || pixel[2] != 0 {
+                    has_non_black = true;
+                    break;
+                }
+            }
+            if has_non_black {
+                break;
+            }
+        }
+        assert!(has_non_black);
+
+        // 可选：保存图像以进行视觉检查
+        // 确保 result 目录存在
+        fs::create_dir_all("result").expect("Failed to create result directory");
+        opencv::imgcodecs::imwrite("result/test_ring_draw.png", &img, &opencv::core::Vector::new()).expect("Failed to write image");
     }
 }
