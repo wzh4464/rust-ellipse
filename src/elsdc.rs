@@ -135,7 +135,7 @@ pub extern "C" fn free_outputs(
         }
         if !out.is_null() {
             let out_size =
-                ((*PImageInt::from_ptr(out)).xsize * (*PImageInt::from_ptr(out)).ysize) as usize;
+                (PImageInt::from_ptr(out).xsize * PImageInt::from_ptr(out).ysize) as usize;
             let _ = Vec::from_raw_parts(out, out_size, out_size);
         }
     }

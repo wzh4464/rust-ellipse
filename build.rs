@@ -67,8 +67,8 @@ fn main() {
 
     // 移动 libelsdc.${lib_ext} 到当前文件夹
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let src = current_dir.join("ELSDc_c").join("libelsdc").with_extension(&lib_ext);
-    let dst = current_dir.join("libelsdc").with_extension(&lib_ext);
+    let src = current_dir.join("ELSDc_c").join("libelsdc").with_extension(lib_ext);
+    let dst = current_dir.join("libelsdc").with_extension(lib_ext);
     fs::rename(&src, &dst).expect("Failed to move libelsdc library to current directory");
     log!("Moved libelsdc.{} to current directory {}", lib_ext, current_dir.display());
 

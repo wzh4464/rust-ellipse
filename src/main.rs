@@ -93,7 +93,7 @@ fn main() -> Result<(), ElsdcError> {
 
     let mut img_all_ellipses =
         Mat::new_rows_cols_with_default(ysize as i32, xsize as i32, CV_8UC3, Scalar::all(0.0))
-            .map_err(|e| ElsdcError::OpenCVError(e))?;
+            .map_err(ElsdcError::OpenCVError)?;
 
     // Copy the image data to the Mat
     unsafe {
@@ -101,7 +101,7 @@ fn main() -> Result<(), ElsdcError> {
         for i in 0..(xsize * ysize) as usize {
             let pixel_value = (*img_double).data.add(i).read() as u8;
             let offset = i * 3;
-            *img_data.offset(offset as isize) = pixel_value;
+            *img_data.add(offset) = pixel_value;
             *img_data.offset(offset as isize + 1) = pixel_value;
             *img_data.offset(offset as isize + 2) = pixel_value;
         }
@@ -113,7 +113,7 @@ fn main() -> Result<(), ElsdcError> {
 
     let output_path_all = "result/output_all_rings.png";
     let params = Vector::new();
-    imgcodecs::imwrite(&output_path_all, &img_all_ellipses, &params)?;
+    imgcodecs::imwrite(output_path_all, &img_all_ellipses, &params)?;
     info!("Saved detected rings image to {}", output_path_all);
 
     unsafe {

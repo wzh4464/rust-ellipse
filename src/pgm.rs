@@ -136,7 +136,7 @@ pub fn ensure_pgm_image(filename: &str) -> Result<String, ElsdcError> {
     }
 
     let img =
-        imgcodecs::imread(filename, IMREAD_GRAYSCALE).map_err(|e| ElsdcError::OpenCVError(e))?;
+        imgcodecs::imread(filename, IMREAD_GRAYSCALE).map_err(ElsdcError::OpenCVError)?;
 
     let new_filename = format!(
         "pgm/{}.pgm",
@@ -149,7 +149,7 @@ pub fn ensure_pgm_image(filename: &str) -> Result<String, ElsdcError> {
     fs::create_dir_all("pgm")?;
 
     imgcodecs::imwrite(&new_filename, &img, &Vector::new())
-        .map_err(|e| ElsdcError::OpenCVError(e))?;
+        .map_err(ElsdcError::OpenCVError)?;
 
     Ok(new_filename)
 }

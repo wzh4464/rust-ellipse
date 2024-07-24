@@ -112,7 +112,7 @@ impl Ring {
             self.ang_start,
             self.ang_end,
             self.full
-        ).map_err(|e| ElsdcError::IoError(e))?;
+        ).map_err(ElsdcError::IoError)?;
         Ok(())
     }
 
@@ -126,7 +126,7 @@ impl Ring {
             .append(true)
             .create(true)
             .open("result/out_rust.txt")
-            .map_err(|e| ElsdcError::IoError(e))?;
+            .map_err(ElsdcError::IoError)?;
 
         self.log_to_file(&mut file)?;
 
@@ -143,7 +143,7 @@ impl Ring {
                 imgproc::LINE_8,
                 0,
             )
-            .map_err(|e| ElsdcError::OpenCVError(e))?;
+            .map_err(ElsdcError::OpenCVError)?;
         } else {
             imgproc::ellipse(
                 img,
@@ -157,7 +157,7 @@ impl Ring {
                 imgproc::LINE_8,
                 0,
             )
-            .map_err(|e| ElsdcError::OpenCVError(e))?;
+            .map_err(ElsdcError::OpenCVError)?;
         }
 
         Ok(())
