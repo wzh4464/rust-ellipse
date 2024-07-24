@@ -3,7 +3,7 @@
  * Created Date: Monday, July 22nd 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 7:21:38 pm
+ * Last Modified: Wednesday, 24th July 2024 8:02:47 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -41,7 +41,7 @@ pub fn read_pgm_image_double_rust(filename: &str) -> io::Result<PImageDouble> {
     let (xsize, ysize, depth) = read_pgm_header(&mut reader)?;
 
     if depth == 0 {
-        eprintln!("Warning: depth=0, probably invalid PGM file.");
+        log::warn!("Warning: depth=0, probably invalid PGM file.");
     }
 
     let mut data = vec![0.0; xsize * ysize];

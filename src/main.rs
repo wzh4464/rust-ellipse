@@ -3,7 +3,7 @@
  * Created Date: Monday, July 22nd 2024
  * Author: Zihan
  * -----
- * Last Modified: Wednesday, 24th July 2024 7:59:12 pm
+ * Last Modified: Wednesday, 24th July 2024 8:13:43 pm
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -23,6 +23,8 @@ use opencv::prelude::*;
 use std::ffi::CString;
 use std::ptr;
 use clap::Parser;
+use log::info;
+use env_logger::Env;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -41,7 +43,18 @@ struct Args {
 }
 
 fn main() -> Result<(), ElsdcError> {
+    // Initialize the logger
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+
     let args = Args::parse();
+
+    if args.verbose {
+        log::set_max_level(log::LevelFilter::Debug);
+    } else {
+        log::set_max_level(log::LevelFilter::Info);
+    }
+
+    info!("Processing image: {}", args.input);
 
     let filename =  args.input;
     let pgm_filename = ensure_pgm_image(&filename)?;
@@ -76,7 +89,7 @@ fn main() -> Result<(), ElsdcError> {
         );
 
         if result == 0 {
-            println!("Detection successful!");
+            info!("Detection successful!");
 
             let mut img_all_ellipses = Mat::new_rows_cols_with_default(
                 ysize as i32,
@@ -104,7 +117,7 @@ fn main() -> Result<(), ElsdcError> {
             let output_path_all = "result/output_all_rings.png";
             let params = Vector::new();
             imgcodecs::imwrite(&output_path_all, &img_all_ellipses, &params)?;
-            println!("Saved detected rings image to {}", output_path_all);
+            info!("Saved detected rings image to {}", output_path_all);
         } else {
             return Err(ElsdcError::DetectionError("Detection failed!".into()));
         }
