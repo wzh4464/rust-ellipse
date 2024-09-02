@@ -3,7 +3,7 @@
  * Created Date: Thursday, July 18th 2024
  * Author: Zihan
  * -----
- * Last Modified: Thursday, 25th July 2024 12:24:36 am
+ * Last Modified: Thursday, 8th August 2024 9:13:21 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
@@ -12,6 +12,7 @@
 **/
 
 use libc::{c_double, c_int};
+use log::error;
 use opencv::core::{Point, Scalar, Size};
 use std::fs::{self, File};
 use std::io::Write;
@@ -19,6 +20,8 @@ use opencv::{core, imgproc, prelude::*};
 use crate::primitives::{Primitive, Image};
 use crate::ElsdcError;
 use crate::image_processing::OpenCVImage;
+use rand::distributions::{Alphanumeric, Distribution};
+use rand::Rng;
 
 impl Primitive for Ring {
     fn draw(&self, image: &mut dyn Image) -> Result<(), Box<dyn std::error::Error>> {
@@ -29,8 +32,10 @@ impl Primitive for Ring {
 
         let center = core::Point::new(self.cx as i32, self.cy as i32);
         let axes = core::Size::new(self.ax as i32, self.bx as i32);
-        let color = core::Scalar::new(255.0, 255.0, 255.0, 0.0); // 白色
-        let thickness = 2;
+        let color = core::Scalar::new(0.0, 0.0, 0.0, 0.0); // 黑色
+        // let thickness = (self.ax + self.bx)/100.0 as i32;
+        // 四舍五入
+        let thickness = ((self.ax + self.bx) / 100.0).round() as i32;
 
         if self.full != 0 {
             imgproc::ellipse(
@@ -63,6 +68,15 @@ impl Primitive for Ring {
         // 将修改后的 mat 复制回 OpenCVImage
         opencv_image.mat = mat;
 
+        // // 随机生成一个文件名并保存图像
+        // let mut rng = rand::thread_rng();
+        // let name: String = std::iter::repeat_with(|| rng.sample(Alphanumeric))
+        //     .take(10)
+        //     .map(char::from)
+        //     .collect();
+        // let path = format!("result/{}.png", name);
+        // opencv::imgcodecs::imwrite(&path, &opencv_image.mat, &opencv::core::Vector::new())?;
+
         Ok(())
     }
 
@@ -76,9 +90,7 @@ impl Primitive for Ring {
     }
 }
 
-/// Represents an ellipse or circular arc detected in an image.
-#[repr(C)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Ring {
     pub x1: c_double,
     pub y1: c_double,
@@ -166,58 +178,84 @@ impl Ring {
 
     /// 计算两个椭圆的交并比
     pub fn iou(&self, other: &Ring) -> f64 {
-        // 创建两个椭圆的mask
-        let size = Size::new(
-            (self.cx.max(other.cx) * 2.0) as i32,
-            (self.cy.max(other.cy) * 2.0) as i32,
-        );
-        let mut mask1 = Mat::zeros(size.height, size.width, opencv::core::CV_8UC1)
-            .unwrap()
-            .to_mat()
-            .unwrap();
-        let mut mask2 = Mat::zeros(size.height, size.width, opencv::core::CV_8UC1)
-            .unwrap()
-            .to_mat()
-            .unwrap();
+        // 1. 计算两个椭圆中心的距离
+        let dx = self.cx - other.cx;
+        let dy = self.cy - other.cy;
+        let distance = (dx * dx + dy * dy).sqrt();
+
+        // 2. 计算画布的边长
+        let max_axis = self.ax.max(self.bx).max(other.ax.max(other.bx));
+        let canvas_size = 2.0 * (distance + max_axis);
+
+        // 3. 创建画布
+        let mut mask1 = Mat::zeros(canvas_size as i32, canvas_size as i32, opencv::core::CV_8UC1).unwrap().to_mat().unwrap();
+        let mut mask2 = Mat::zeros(canvas_size as i32, canvas_size as i32, opencv::core::CV_8UC1).unwrap().to_mat().unwrap();
+
+        // 4. 将椭圆中心移到画布中心
+        let center = Point::new((canvas_size / 2.0) as i32, (canvas_size / 2.0) as i32);
 
         // 绘制椭圆
-        imgproc::ellipse(
+        if let Err(e) = imgproc::ellipse(
             &mut mask1,
-            Point::new(self.cx as i32, self.cy as i32),
+            center,
             Size::new(self.ax as i32, self.bx as i32),
-            self.theta * 180.0 / std::f64::consts::PI,
-            self.ang_start * 180.0 / std::f64::consts::PI,
-            self.ang_end * 180.0 / std::f64::consts::PI,
+            self.theta * 180.0 / ::std::f64::consts::PI,
+            self.ang_start * 180.0 / ::std::f64::consts::PI,
+            self.ang_end * 180.0 / ::std::f64::consts::PI,
             Scalar::new(255.0, 0.0, 0.0, 0.0),
             -1,
             imgproc::LINE_8,
             0,
-        )
-        .unwrap();
+        ) {
+            error!("Failed to draw ellipse on mask1: {:?}", e);
+            return 0.0;
+        }
 
-        imgproc::ellipse(
+        if let Err(e) = imgproc::ellipse(
             &mut mask2,
-            Point::new(other.cx as i32, other.cy as i32),
+            Point::new((center.x + dx as i32) , (center.y + dy as i32)),
             Size::new(other.ax as i32, other.bx as i32),
-            other.theta * 180.0 / std::f64::consts::PI,
-            other.ang_start * 180.0 / std::f64::consts::PI,
-            other.ang_end * 180.0 / std::f64::consts::PI,
+            other.theta * 180.0 / ::std::f64::consts::PI,
+            other.ang_start * 180.0 / ::std::f64::consts::PI,
+            other.ang_end * 180.0 / ::std::f64::consts::PI,
             Scalar::new(255.0, 0.0, 0.0, 0.0),
             -1,
             imgproc::LINE_8,
             0,
-        )
-        .unwrap();
+        ) {
+            error!("Failed to draw ellipse on mask2: {:?}", e);
+            return 0.0;
+        }
 
         // 计算交集和并集
         let mut intersection = Mat::default();
         let mut union = Mat::default();
-        opencv::core::bitwise_and(&mask1, &mask2, &mut intersection, &Mat::default()).unwrap();
-        opencv::core::bitwise_or(&mask1, &mask2, &mut union, &Mat::default()).unwrap();
+        if let Err(e) = opencv::core::bitwise_and(&mask1, &mask2, &mut intersection, &Mat::default()) {
+            error!("Failed to calculate intersection: {:?}", e);
+            return 0.0;
+        }
+
+        if let Err(e) = opencv::core::bitwise_or(&mask1, &mask2, &mut union, &Mat::default()) {
+            error!("Failed to calculate union: {:?}", e);
+            return 0.0;
+        }
 
         // 计算非零像素数量
-        let intersection_area = opencv::core::count_non_zero(&intersection).unwrap() as f64;
-        let union_area = opencv::core::count_non_zero(&union).unwrap() as f64;
+        let intersection_area = match opencv::core::count_non_zero(&intersection) {
+            Ok(area) => area as f64,
+            Err(e) => {
+                error!("Failed to count non-zero pixels in intersection: {:?}", e);
+                return 0.0;
+            }
+        };
+
+        let union_area = match opencv::core::count_non_zero(&union) {
+            Ok(area) => area as f64,
+            Err(e) => {
+                error!("Failed to count non-zero pixels in union: {:?}", e);
+                return 0.0;
+            }
+        };
 
         // 计算IOU
         if union_area == 0.0 {

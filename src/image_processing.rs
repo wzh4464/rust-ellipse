@@ -1,17 +1,17 @@
-use crate::pgm::ensure_pgm_image;
 /**
  * File: /src/image_processing.rs
  * Created Date: Wednesday, July 24th 2024
  * Author: Zihan
  * -----
- * Last Modified: Thursday, 25th July 2024 12:16:16 am
+ * Last Modified: Thursday, 8th August 2024 8:48:46 am
  * Modified By: the developer formerly known as Zihan at <wzh4464@gmail.com>
  * -----
  * HISTORY:
  * Date      		By   	Comments
  * ----------		------	---------------------------------------------------------
-**/
-
+ **/
+ 
+use crate::pgm::ensure_pgm_image;
 use crate::primitives::Image;
 use crate::ElsdcError;
 use opencv::core::{Mat, MatTraitConst, MatTrait, Vector};
@@ -59,6 +59,8 @@ impl TryFrom<*mut ImageDouble> for OpenCVImage {
 
             let xsize = (*img_double).xsize as i32;
             let ysize = (*img_double).ysize as i32;
+            // log
+            log::info!("Converting ImageDouble to OpenCVImage: xsize={}, ysize={}", xsize, ysize);
             
             let mut mat = Mat::new_rows_cols_with_default(
                 ysize, 
